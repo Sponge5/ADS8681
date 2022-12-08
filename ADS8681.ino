@@ -8,7 +8,7 @@
 #define LOG_LEVEL   LOG_LEVEL_VERBOSE
 //#define LOG_LEVEL   LOG_LEVEL_NOTICE
 
-#define SPI_CS          22
+#define SPI_CS          2
 
 uint8_t serialInput;
 uint8_t spiBytes[4];

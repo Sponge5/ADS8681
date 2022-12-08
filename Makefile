@@ -1,6 +1,6 @@
 PORT = /dev/ttyUSB0
 
-FQBN = arduino:avr:mega
+FQBN = arduino:avr:nano
 
 # must be comma separated
 LIBS = ./

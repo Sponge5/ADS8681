@@ -11,8 +11,7 @@
 #define SPI_CS          2
 
 uint8_t serialInput;
-uint8_t spiBytes[4];
-uint32_t adcValue;
+uint16_t ads8681_register;
 
 void setup()
 {
@@ -25,29 +24,34 @@ void setup()
     Log.notice(F("ADS8681-FW Start\r\n"));
 }
 
-void readValue(uint8_t command, uint16_t address, uint16_t data)
+uint32_t ads8681_writeRegister(uint8_t command, uint16_t regAddr, uint16_t data)
 {
-    adcValue = 0;
-    spiBytes[0] = (command << 1) | ((address >> 8) & 0x01);
-    spiBytes[1] = (address & 0xFF);
-    spiBytes[2] = ((data >> 8) & 0xFF);
-    spiBytes[3] = (data & 0xFF);
+    uint32_t ret = 0;
+    uint8_t bytes[4] = {0};
+    bytes[0] = (command << 1) | ((regAddr >> 8) & 0x01);
+    bytes[1] = (regAddr & 0xFF);
+    bytes[2] = (data >> 8);
+    bytes[3] = data;
     digitalWrite(SPI_CS, LOW);
     SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE0));
-    SPI.transfer(spiBytes, 4);
+    SPI.transfer(bytes, 4);
     SPI.endTransaction();
     digitalWrite(SPI_CS, HIGH);
-    for(uint8_t i = 0; i < 4; ++i)
-    {
-        adcValue = (adcValue << 8);
-        adcValue |= spiBytes[i];
-    }
-    uint8_t b1 = adcValue >> 16;
-    uint8_t b2 = adcValue >> 24;
-    uint16_t value = (b2 << 8) | b1;
-    //Log.notice("%X %X\r\n", adcValue, adcValue >> 16);
-    //Log.notice("%X %X\r\n", (adcValue >> 24) & 0x0F, (adcValue >> 16) & 0x0F);
-    Log.notice("%X\r\n", value);
+    ret = ((uint32_t)bytes[0]) << 24;
+    ret |= ((uint32_t)bytes[1]) << 16;
+    ret |= ((uint32_t)bytes[2]) << 8;
+    ret |= ((uint32_t)bytes[3]);
+    return ret;
+}
+
+uint16_t ads8681_readRegister(uint16_t address)
+{
+    return (uint16_t)(ads8681_writeRegister(ADS868X_READ, address, 0) >> 16);
+}
+
+uint16_t ads8681_readAdc()
+{
+    return (uint16_t)(ads8681_writeRegister(ADS868X_NOP, 0, 0) >> 16);
 }
 
 void loop()
@@ -58,13 +62,35 @@ void loop()
         switch(serialInput)
         {
             case 'a':
-                readValue(ADS868X_READ, ADS868X_DEVICE_ID_REG, 0x00);
+                ads8681_register = ads8681_readRegister(ADS868X_DEVICE_ID_REG);
                 break;
             case 'b':
-                readValue(ADS868X_READ, ADS868X_DATAOUT_CTL_REG, 0x00);
+                ads8681_register = ads8681_readRegister(ADS868X_DATAOUT_CTL_REG);
+                break;
+            case 'c':
+                ads8681_register = ads8681_readRegister(ADS868X_RANGE_SEL_REG);
+                Log.notice("RANGE_SEL: %X\r\n",
+                        (ads8681_register & ADS868X_RANGE_SEL_BITMASK)
+                        >> ADS868X_RANGE_SEL_BITSHIFT);
+                Log.notice("INTREF_DIS: %X\r\n",
+                        (ads8681_register & ADS868X_INTREF_DIS_BITMASK)
+                        >> ADS868X_INTREF_DIS_BITSHIFT);
+                break;
+            case 'd':
+                ads8681_register = ads8681_readRegister(ADS868X_RANGE_SEL_REG);
+                ads8681_register |= (0x1 << ADS868X_INTREF_DIS_BITSHIFT);
+                ads8681_register = ads8681_writeRegister(
+                        ADS868X_WRITE_FULL, ADS868X_RANGE_SEL_REG, ads8681_register);
+                break;
+            case 'e':
+                ads8681_register = ads8681_readRegister(ADS868X_RANGE_SEL_REG);
+                ads8681_register &= ~ADS868X_INTREF_DIS_BITMASK;
+                ads8681_register = ads8681_writeRegister(
+                        ADS868X_WRITE_FULL, ADS868X_RANGE_SEL_REG, ads8681_register);
                 break;
             default:
-                readValue(ADS868X_NOP, 0x00, 0x00);
+                ads8681_register = ads8681_readAdc();
+                Log.notice("%X\r\n", ads8681_register);
                 break;
         }
     }

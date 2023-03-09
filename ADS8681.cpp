@@ -1,17 +1,12 @@
 #include <Arduino.h>
-#include <SPI.h>
 
-#include "ADS868X.h"
 #include "ADS8681.h"
 
-SPISettings settings(1000000, MSBFIRST, SPI_MODE0);
-
-AD7398::AD7398(int cs_pin)
+ADS8681::ADS8681(int cs_pin)
 {
 	pinMode(cs_pin, OUTPUT);
 	digitalWrite(cs_pin, LOW);
 	_cs_pin = cs_pin;
-
     SPI.begin();
 }
 
@@ -23,11 +18,11 @@ uint32_t ADS8681::writeRegister(uint8_t command, uint16_t regAddr, uint16_t data
     bytes[1] = (regAddr & 0xFF);
     bytes[2] = (data >> 8);
     bytes[3] = data;
-    digitalWrite(SPI_CS, LOW);
-    SPI.beginTransaction(settings);
+    digitalWrite(_cs_pin, LOW);
+    SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE0));
     SPI.transfer(bytes, 4);
     SPI.endTransaction();
-    digitalWrite(SPI_CS, HIGH);
+    digitalWrite(_cs_pin, HIGH);
     ret = ((uint32_t)bytes[0]) << 24;
     ret |= ((uint32_t)bytes[1]) << 16;
     ret |= ((uint32_t)bytes[2]) << 8;
@@ -35,13 +30,17 @@ uint32_t ADS8681::writeRegister(uint8_t command, uint16_t regAddr, uint16_t data
     return ret;
 }
 
-uint16_t ADS8681::readRegister(uint16_t address)
+//uint16_t ADS8681::readRegister(uint16_t address)
+//{
+//    return (uint16_t)(this->writeRegister(ADS868X_READ, address, 0) >> 16);
+//}
+uint32_t ADS8681::readRegister(uint16_t address)
 {
-    return (uint16_t)(ads8681_writeRegister(ADS868X_READ, address, 0) >> 16);
+    return this->writeRegister(ADS868X_READ, address, 0);
 }
 
 uint16_t ADS8681::readAdc()
 {
-    return (uint16_t)(ads8681_writeRegister(ADS868X_NOP, 0, 0) >> 16);
+    return (uint16_t)(this->writeRegister(ADS868X_NOP, 0, 0) >> 16);
 }
 

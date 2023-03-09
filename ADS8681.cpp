@@ -10,7 +10,8 @@ ADS8681::ADS8681(int cs_pin)
     SPI.begin();
 }
 
-uint32_t ADS8681::writeRegister(uint8_t command, uint16_t regAddr, uint16_t data)
+uint32_t ADS8681::spiSend(enum ads868x_spi_command command,
+        enum ads868x_register_address regAddr, uint16_t data)
 {
     uint32_t ret = 0;
     uint8_t bytes[4] = {0};
@@ -30,17 +31,7 @@ uint32_t ADS8681::writeRegister(uint8_t command, uint16_t regAddr, uint16_t data
     return ret;
 }
 
-//uint16_t ADS8681::readRegister(uint16_t address)
-//{
-//    return (uint16_t)(this->writeRegister(ADS868X_READ, address, 0) >> 16);
-//}
-uint32_t ADS8681::readRegister(uint16_t address)
+uint16_t ADS8681::adcRead()
 {
-    return this->writeRegister(ADS868X_READ, address, 0);
+    return (uint16_t)(this->spiSend(ADS868X_SPI_COMMAND_NOP, 0, 0) >> 16);
 }
-
-uint16_t ADS8681::readAdc()
-{
-    return (uint16_t)(this->writeRegister(ADS868X_NOP, 0, 0) >> 16);
-}
-

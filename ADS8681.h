@@ -4,30 +4,6 @@
 #include "ADS868X.h"
 #include <SPI.h>
 
-typedef enum
-{
-    ADS8681_DEVICE_ID_REG,
-    ADS8681_RST_PWRCTL_REG,
-    ADS8681_SDI_CTL_REG,
-    ADS8681_SDO_CTL_REG,
-    ADS8681_DATAOUT_CTL_REG,
-    ADS8681_RANGE_SEL_REG,
-    ADS8681_ALARM_REG,
-    ADS8681_ALARM_H_TH_REG,
-    ADS8681_ALARM_L_TH_REG
-}
-ADS8681_Registers;
-
-#define ADS8681_DEVICE_ID_REG_ADDRESS   0x00
-#define ADS8681_RST_PWRCTL_REG_ADDRESS  0x04
-#define ADS8681_SDI_CTL_REG_ADDRESS     0x08
-#define ADS8681_SDO_CTL_REG_ADDRESS     0x0C
-#define ADS8681_DATAOUT_CTL_REG_ADDRESS 0x10
-#define ADS8681_RANGE_SEL_REG_ADDRESS   0x14
-#define ADS8681_ALARM_REG_ADDRESS       0x20
-#define ADS8681_ALARM_H_TH_REG_ADDRESS  0x24
-#define ADS8681_ALARM_L_TH_REG_ADDRESS  0x28
-
 /* DEVICE_ID_REG */
 #define ADS8681_DEVICE_ADDR_SHIFT           16
 #define ADS8681_DEVICE_ADDR_MASK            0xF
@@ -124,12 +100,12 @@ class ADS8681
 {
 public:
     ADS8681(int cs_pin);
-    uint32_t    writeRegister(uint8_t command, uint16_t regAddr, uint16_t data);
-    //uint16_t    readRegister(uint16_t address);
-    uint32_t    readRegister(uint16_t address);
-    uint16_t    readAdc();
+    uint32_t spiSend(
+            enum ads868x_spi_command command,
+            enum ads868x_register_address regAddr,
+            uint16_t data);
+    uint16_t adcRead();
 private:
-    uint16_t reg;
     int _cs_pin;
 };
 
